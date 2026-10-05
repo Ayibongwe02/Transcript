@@ -1,0 +1,44 @@
+# Dependencies & build output
+node_modules
+npm-debug.log*
+.output
+.nitro
+.vercel
+.tanstack
+dist
+.cache
+.turbo
+coverage
+
+# VCS / editor
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Desktop companion (Electron) — not part of the web image
+companion
+
+# Local / platform noise
+screenshots
+attachments
+artifacts
+*.zip
+*.log
+.env
+.env.*
+!.env.example
+
+# Grok sandbox internals — only app-env.json is needed at build time
+.grok/**
+!.grok/app-env.json
+
+# Tests (not required at runtime)
+**/*.test.ts
+**/*.test.mjs
+
+# Docs
+*.md
+AGENTS.md
+AGENTS.project.md

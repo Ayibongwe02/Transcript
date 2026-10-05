@@ -1,0 +1,49 @@
+# Local production-style stack (PGLite, no external database).
+#
+#   docker compose up --build
+#
+# Persistent accounts/sessions: the named volume below keeps PGLite's files
+# across restarts. For real Postgres (recommended in production):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build
+#
+# App: http://localhost:10000
+# Sign-in origin MUST match BETTER_AUTH_URL (use localhost, not 127.0.0.1).
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "10000:10000"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "10000"
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: "10000"
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env (generate with openssl rand -hex 32)}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:10000}
+      PGLITE_DATA_DIR: /app/data/pglite
+      # Empty = embedded PGLite. Overlay compose.postgres.yml to point at `db`.
+      DATABASE_URL: ${DATABASE_URL:-}
+    volumes:
+      - kh_pglite:/app/data/pglite
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:10000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+volumes:
+  kh_pglite:

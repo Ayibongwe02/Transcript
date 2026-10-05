@@ -1,0 +1,52 @@
+# Sign-up needs a working DB. Render injects DATABASE_URL from the
+# managed Postgres service below — do not remove it or auth will try PGLite
+# inside the container (only for local Docker without DATABASE_URL).
+
+# Render Blueprint — deploy with the "New +" -> "Blueprint" flow, pointing
+# Render at this repo. Builds the Dockerfile above and wires up a managed
+# Postgres database automatically.
+#
+# IMPORTANT — read before deploying:
+# Real sign-in is ON, via email + password (Better Auth, its own Postgres) —
+# so each tester creates their own account at /login and gets their own data.
+# This is intentionally NOT the "Sign in with Google/X" buttons: those
+# federate through the Grok platform's own hosted auth broker and only work
+# when deployed through Grok itself, so they're left unused here rather than
+# shipped broken. This is unrelated to the per-source connectors (Slack,
+# Zoom, Google Meet, Teams, GitHub) on the Sources page — those use your own
+# OAuth app credentials or a pasted API token, entered in-app, and work the
+# same on Render as anywhere else.
+
+databases:
+  - name: knowledge-hub-db
+    plan: free
+    databaseName: knowledge_hub
+    user: knowledge_hub
+
+services:
+  - type: web
+    name: knowledge-hub
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: NITRO_PRESET
+        value: node-server
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      # BETTER_AUTH_URL is NOT needed on the default onrender.com URL: the app
+      # falls back to RENDER_EXTERNAL_URL, which Render injects automatically.
+      # Add BETTER_AUTH_URL (e.g. https://hub.example.com) only if you attach a
+      # custom domain, so sign-in uses that origin instead.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: knowledge-hub-db
+          property: connectionString
